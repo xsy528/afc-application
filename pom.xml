@@ -5,27 +5,79 @@
   <groupId>com.insigma.common</groupId>
   <artifactId>afc-application</artifactId>
   <version>1.0</version>
-  <packaging>pom</packaging>
-  
-  <parent>
-     <groupId>org.springframework.boot</groupId>
-     <artifactId>spring-boot-starter-parent</artifactId>
-     <version>2.1.3.RELEASE</version>
-     <relativePath/>
-  </parent>
   
   <properties>
-     <java.version>1.8</java.version>
-     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+      <java.version>1.8</java.version>
+      <source.version>${java.version}</source.version>
+      <target.version>${java.version}</target.version>
+      <compiler.version>${java.version}</compiler.version>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
 
+  <repositories>
+      <repository>
+          <id>zhkj</id>
+          <name>zhkj</name>
+          <url>http://192.168.178.235:8081/repository/maven-public/</url>
+      </repository>
+  </repositories>
+
+  <pluginRepositories>
+      <pluginRepository>
+          <id>zhkj-plugin</id>
+          <name>zhkj-plugin</name>
+          <url>http://192.168.178.235:8081/repository/maven-public/</url>
+      </pluginRepository>
+  </pluginRepositories>
+
+  <distributionManagement>
+      <repository>
+          <id>zhkj-releases</id>
+          <name>Packaging Release Repository</name>
+          <url>http://192.168.178.235:8081/repository/maven-releases/</url>
+      </repository>
+      <snapshotRepository>
+          <id>zhkj-snapshot</id>
+          <name>Packaging Snapshot Repository</name>
+          <url>http://192.168.178.235:8081/repository/maven-snapshots/</url>
+      </snapshotRepository>
+  </distributionManagement>
+
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
+      <dependency>
+          <groupId>junit</groupId>
+          <artifactId>junit</artifactId>
+          <version>4.12</version>
+      </dependency>
   </dependencies>
+
+  <build>
+      <plugins>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <version>3.8.0</version>
+              <configuration>
+                  <source>${source.version}</source>
+                  <target>${target.version}</target>
+                  <compilerVersion>${compiler.version}</compilerVersion>
+              </configuration>
+          </plugin>
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-source-plugin</artifactId>
+              <version>3.0.1</version>
+              <executions>
+                  <execution>
+                      <id>attach-sources</id>
+                      <goals>
+                          <goal>jar</goal>
+                      </goals>
+                  </execution>
+              </executions>
+          </plugin>
+      </plugins>
+  </build>
+
 </project>
