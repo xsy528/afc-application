@@ -6,9 +6,11 @@
 /**
  * 
  */
-package com.insigma.afc.consts;
+package com.insigma.afc.model;
 
 import java.io.Serializable;
+
+import com.insigma.afc.consts.ReturnCode;
 
 import io.swagger.annotations.ApiModel;
 
