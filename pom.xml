@@ -50,6 +50,17 @@
           <artifactId>junit</artifactId>
           <version>4.12</version>
       </dependency>
+      
+      <!-- <dependency>
+            <groupId>com.insigma.product</groupId>
+            <artifactId>afc-security-starter</artifactId>
+            <version>0.0.5</version>
+        </dependency> -->
+        <dependency>
+            <groupId>com.insigma.product</groupId>
+            <artifactId>afc-swagger-starter</artifactId>
+            <version>0.0.1</version>
+        </dependency>
   </dependencies>
 
   <build>
