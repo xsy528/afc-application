@@ -28,7 +28,18 @@ public class SearchTableColumn {
     private String versionnumberflag;
 
     @XStreamAsAttribute
+    private String querytype;
+
+    @XStreamAsAttribute
     private Short componenttype;
+
+    public String getQuerytype() {
+        return querytype;
+    }
+
+    public void setQuerytype(String querytype) {
+        this.querytype = querytype;
+    }
 
     /**
      * @return the text
