@@ -12,7 +12,7 @@ import java.util.List;
  *
  */
 @ApiModel(value = "前端传递的左侧树查询条件", description = "acc_clean_center、lines、stations、devices")
-public class MetroStation extends PageVO{
+public class MetroStationVO extends PageVO{
 
     @ApiModelProperty(name = "acc_clean_center", value = "acc清分中心节点编号")
     @JsonProperty("acc_clean_center")
