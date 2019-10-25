@@ -9,13 +9,14 @@
 package com.insigma.afc.msutil.rmi;
 
 import com.insigma.afc.application.AFCNodeLevel;
-import com.insigma.afc.msutil.dao.CommonDao;
+import com.insigma.afc.msutil.dao.util.JdbcTemplateDao;
 import com.insigma.afc.msutil.enums.CDMSConnectionStatus;
 import com.insigma.afc.msutil.enums.CDMSConnectionType;
 import com.insigma.afc.msutil.enums.CDMSNodeStatus;
 import com.insigma.afc.msutil.rmi.dcs.NodeStrategyUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,17 +34,17 @@ public class MessageCheckService implements IMessageCheckService {
     private static Logger logger = LogManager.getLogger(MessageCheckService.class);
 
     // @Autowired
-    private CommonDao commonDAO;
+    private JdbcTemplateDao jdbcTemplateDao;
 
-    public MessageCheckService(CommonDao commonDao) {
-        this.commonDAO = commonDao;
+    public MessageCheckService(JdbcTemplate jdbcTemplate) {
+        jdbcTemplateDao = new JdbcTemplateDao(jdbcTemplate);
     }
 
     @Override
     public List<Object[]> checkMessageServer(List<Long> nodeList) {
         try {
 
-            if (commonDAO == null) {
+            if (jdbcTemplateDao == null) {
                 logger.debug("commonDao加载失败");
                 return null;
             }
@@ -68,7 +69,7 @@ public class MessageCheckService implements IMessageCheckService {
             sql = sql + ") and CONNECTION_STATUS = " + CDMSConnectionStatus.Connect + " and CONNECTION_TYPE = "
                     + CDMSConnectionType.Master + " group by SC_NODE_ID )  and CONNECTION_STATUS = "
                     + CDMSConnectionStatus.Connect + " and CONNECTION_TYPE = " + CDMSConnectionType.Master;
-            List<Object[]> objList = commonDAO.execSqlQuery(sql);
+            List<Object[]> objList = jdbcTemplateDao.execSqlQuery(sql);
             if (!objList.isEmpty()) {
                 return objList;
             } else {
@@ -89,7 +90,7 @@ public class MessageCheckService implements IMessageCheckService {
 
             String sql = "select NODE_IP_ADDRESS from TMETRO_MLC_NODE where NODE_STATUS = " + CDMSNodeStatus.Normal
                     + " order by NODE_ID ";
-            List<Object> selectList = commonDAO.execSqlQuery(sql);
+            List<Object> selectList = jdbcTemplateDao.execSqlQuery(sql);
             if (selectList != null) {
                 List<String> returnList = new ArrayList<String>();
                 for (Object ipAddr : selectList) {
@@ -118,7 +119,7 @@ public class MessageCheckService implements IMessageCheckService {
             String sql = "select distinct t.SC_NODE_ID from TMETRO_MLC_SC_CONNECTION t where t.CONNECTION_STATUS = "
                     + CDMSConnectionStatus.Connect + " and CONNECTION_TYPE = " + CDMSConnectionType.Master
                     + " order by t.SC_NODE_ID";
-            List<Object> selectList = commonDAO.execSqlQuery(sql);
+            List<Object> selectList = jdbcTemplateDao.execSqlQuery(sql);
             if (selectList != null) {
                 List<Long> returnList = new ArrayList<Long>();
                 for (Object nodeId : selectList) {
@@ -145,7 +146,7 @@ public class MessageCheckService implements IMessageCheckService {
 
             String sql = "select distinct t.MLC_NODE_IP_ADDRESS from TMETRO_MLC_SC_CONNECTION t where t.CONNECTION_STATUS = "
                     + CDMSConnectionStatus.Connect + " and CONNECTION_TYPE = " + CDMSConnectionType.Master;
-            List<Object> selectList = commonDAO.execSqlQuery(sql);
+            List<Object> selectList = jdbcTemplateDao.execSqlQuery(sql);
             if (selectList != null) {
                 List<String> returnList = new ArrayList<String>();
                 for (Object nodeId : selectList) {
@@ -176,10 +177,10 @@ public class MessageCheckService implements IMessageCheckService {
             //存在则更新在线状态,不存在则新增记录
             if (count > 0) {
                 sql = "update TMETRO_MLC_SC_CONNECTION set CONNECTION_TYPE = ? where SC_NODE_ID = ?";
-                commonDAO.execSqlUpdate(sql, connectStatus, lcNodeId);
+                jdbcTemplateDao.execSqlUpdate(sql, connectStatus, lcNodeId);
             } else if (count == 0) {
                 sql = "insert into TMETRO_MLC_SC_CONNECTION values (?,?,?,?,?,?,?)";
-                commonDAO.execSqlUpdate(sql, mlcNodeId, lcNodeId, mlcIp, lcIp, connectStatus, new Date(), 1);
+                jdbcTemplateDao.execSqlUpdate(sql, mlcNodeId, lcNodeId, mlcIp, lcIp, connectStatus, new Date(), 1);
             }
 
         } catch (Exception e) {
@@ -198,7 +199,7 @@ public class MessageCheckService implements IMessageCheckService {
         String sql = "select count(*) from TMETRO_MLC_SC_CONNECTION where SC_NODE_ID = " + nodeId;
         List<Object> result = null;
         try {
-            result = commonDAO.execSqlCount(sql);
+            result = jdbcTemplateDao.execSqlCount(sql);
         } catch (Exception e) {
             logger.error("统计下级节点在线记录失败");
             e.printStackTrace();

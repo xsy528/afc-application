@@ -5,23 +5,17 @@
  */
 package com.insigma.afc.msutil.rmi.dcs;
 
-import com.insigma.afc.msutil.dao.CommonDao;
-import com.insigma.afc.msutil.dao.entity.topology.MetroDevice;
-import com.insigma.afc.msutil.dao.entity.topology.MetroLine;
-import com.insigma.afc.msutil.dao.entity.topology.MetroNode;
-import com.insigma.afc.msutil.dao.entity.topology.MetroStation;
 import com.insigma.afc.msutil.enums.AFCCmdResultType;
-import com.insigma.afc.msutil.enums.AFCDeviceType;
+import com.insigma.afc.topology.MetroNode;
 import com.insigma.afc.workbench.rmi.CmdHandlerResult;
 import com.insigma.afc.msutil.model.CommandResult;
-import com.insigma.afc.msutil.model.TmoCmdResult;
 import com.insigma.afc.msutil.rmi.IMessageCheckService;
 import com.insigma.afc.msutil.rmi.MessageCheckService;
 import com.insigma.afc.workbench.rmi.ICommandService;
 import com.insigma.commons.util.DateTimeUtil;
-import com.insigma.commons.util.NodeIdUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.remoting.rmi.RmiProxyFactoryBean;
 
 import java.io.Serializable;
@@ -56,7 +50,7 @@ public class CDRmiProxyFactory<T> {
 	private String serviceName;
 	private Class serviceInterface;
 
-	public CDRmiProxyFactory(String port, String serviceName, Class serviceInterface, CommonDao commonDao) {
+	public CDRmiProxyFactory(String port, String serviceName, Class serviceInterface, JdbcTemplate commonDao) {
 		try {
 			this.port = port;
 			this.serviceName = serviceName;
@@ -159,17 +153,15 @@ public class CDRmiProxyFactory<T> {
 	 * @param id
 	 * @param cmdType
 	 * @param name
-	 * @param rmiPort
 	 * @param isSaveCmd
 	 * @return
 	 */
 	//@Transactional
 	public static List<CommandResult> getCommandResult(ICommandService commandService, final String userId,
-													   final MetroNode node, final Object arg, final int id, final short cmdType, final String name, final String rmiPort, boolean isSaveCmd){
+                                                       final MetroNode node, final Object arg, final int id, final short cmdType, final String name, boolean isSaveCmd){
 
 		List<CommandResult> results = new Vector<>();
 
-		logger.info("向节点" + node.name() + "发送" + name + " 参数：" + arg);
 		int result = AFCCmdResultType.SEND_FAILED;
 		String resultDesc = null;
 		try {
@@ -187,30 +179,30 @@ public class CDRmiProxyFactory<T> {
 			}
 
 				//将目标节点转化为发送命令节点
-				com.insigma.afc.topology.MetroLine target = new com.insigma.afc.topology.MetroLine();
-				switch (node.level()) {
-					case LC: {
-						MetroLine metroLine = (MetroLine) node;
-						target.setLineID(metroLine.getLineID());
-						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroLine.getLineID().longValue()));
-						break;
-					}
-					case SC: {
-						MetroStation metroStation = (MetroStation) node;
-						target.setLineID(metroStation.getLineId());
-						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroStation.getLineId().longValue()));
-						break;
-					}
-					case SLE: {
-						MetroDevice metroDevice = (MetroDevice) node;
-						target.setLineID(metroDevice.getLineId());
-						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroDevice.getLineId().longValue()));
-						break;
-					}
-					default:
-				}
+//				com.insigma.afc.topology.MetroLine target = new com.insigma.afc.topology.MetroLine();
+//				switch (node.level()) {
+//					case LC: {
+//						MetroLine metroLine = (MetroLine) node;
+//						target.setLineID(metroLine.getLineID());
+//						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroLine.getLineID().longValue()));
+//						break;
+//					}
+//					case SC: {
+//						MetroStation metroStation = (MetroStation) node;
+//						target.setLineID(metroStation.getLineId());
+//						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroStation.getLineId().longValue()));
+//						break;
+//					}
+//					case SLE: {
+//						MetroDevice metroDevice = (MetroDevice) node;
+//						target.setLineID(metroDevice.getLineId());
+//						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroDevice.getLineId().longValue()));
+//						break;
+//					}
+//					default:
+//				}
 			CmdHandlerResult command = commandService.command(id, userId,
-					node.id(), arg, target);
+					node.getNodeId(), arg, node);
 			Serializable returnValue = command.returnValue;
 			if (returnValue != null && returnValue instanceof Integer) {
 				result = (Integer) returnValue;
@@ -221,7 +213,7 @@ public class CDRmiProxyFactory<T> {
 		} catch (Exception e) {
 			logger.error("发送" + name + "错误", e);
 		}
-		logger.info("向节点" + node.name() + "发送" + name + "  返回：" + result);
+//		logger.info("向节点" + node.name() + "发送" + name + "  返回：" + result);
 		results.add(save(node, name, arg, result, cmdType, resultDesc,userId,isSaveCmd));
 
 		return results;
@@ -249,8 +241,8 @@ public class CDRmiProxyFactory<T> {
 		}
 
 		if(isSaveCmd) {
-			TmoCmdResult tmoCmdResult = new TmoCmdResult();
-			tmoCmdResult.setOccurTime(DateTimeUtil.getNow());
+//			TmoCmdResult tmoCmdResult = new TmoCmdResult();
+//			tmoCmdResult.setOccurTime(DateTimeUtil.getNow());
 			if (arg != null) {
 				//            tmoCmdResult.setRemark("命令参数：" + BeanUtil.toString(arg));
 				//						tmoCmdResult.setTagValue(tagValue)
@@ -261,39 +253,39 @@ public class CDRmiProxyFactory<T> {
 //			}
 			}
 
-			tmoCmdResult.setCmdName(command);
+//			tmoCmdResult.setCmdName(command);
 
-			if (node instanceof MetroLine) {
-				MetroLine line = (MetroLine) node;
-				short lineID = line.getLineID();
-				tmoCmdResult.setLineId(lineID);
-				tmoCmdResult.setStationId(0);
-				tmoCmdResult.setNodeId(getNodeId(lineID));
-				tmoCmdResult.setNodeType(AFCDeviceType.LC);
-			}
+//			if (node instanceof MetroLine) {
+//				MetroLine line = (MetroLine) node;
+//				short lineID = line.getLineID();
+//				tmoCmdResult.setLineId(lineID);
+//				tmoCmdResult.setStationId(0);
+//				tmoCmdResult.setNodeId(getNodeId(lineID));
+//				tmoCmdResult.setNodeType(AFCDeviceType.LC);
+//			}
+//
+//			if (node instanceof MetroStation) {
+//				MetroStation station = (MetroStation) node;
+//				tmoCmdResult.setLineId(station.getLineId());
+//				Integer stationId = station.getStationId();
+//				tmoCmdResult.setStationId(stationId);
+//				tmoCmdResult.setNodeId(getNodeId(stationId));
+//				tmoCmdResult.setNodeType(AFCDeviceType.SC);
+//			}
+//
+//			if (node instanceof MetroDevice) {
+//				MetroDevice device = (MetroDevice) node;
+//				tmoCmdResult.setLineId(device.getLineId());
+//				tmoCmdResult.setStationId(device.getStationId());
+//				tmoCmdResult.setNodeId(device.getDeviceId());
+//				tmoCmdResult.setNodeType(device.getDeviceType());
+//			}
 
-			if (node instanceof MetroStation) {
-				MetroStation station = (MetroStation) node;
-				tmoCmdResult.setLineId(station.getLineId());
-				Integer stationId = station.getStationId();
-				tmoCmdResult.setStationId(stationId);
-				tmoCmdResult.setNodeId(getNodeId(stationId));
-				tmoCmdResult.setNodeType(AFCDeviceType.SC);
-			}
-
-			if (node instanceof MetroDevice) {
-				MetroDevice device = (MetroDevice) node;
-				tmoCmdResult.setLineId(device.getLineId());
-				tmoCmdResult.setStationId(device.getStationId());
-				tmoCmdResult.setNodeId(device.getDeviceId());
-				tmoCmdResult.setNodeType(device.getDeviceType());
-			}
-
-			tmoCmdResult.setUploadStatus((short) 0);
-			tmoCmdResult.setOperatorId(userId);
-			tmoCmdResult.setCmdResult((short) result);
-			tmoCmdResult.setRemark(resultDesc);
-			tmoCmdResult.setCmdType(cmdType);
+//			tmoCmdResult.setUploadStatus((short) 0);
+//			tmoCmdResult.setOperatorId(userId);
+//			tmoCmdResult.setCmdResult((short) result);
+//			tmoCmdResult.setRemark(resultDesc);
+//			tmoCmdResult.setCmdType(cmdType);
 			try {
 				//tmoCmdResult
 				//commonDao.execSqlUpdate(,null);
@@ -302,7 +294,7 @@ public class CDRmiProxyFactory<T> {
 			}
 		}
 		CommandResult resultitem = new CommandResult();
-		resultitem.setId(node.name());
+		resultitem.setId(node.getPicName());
 		resultitem.setCmdName(command);
 		resultitem.setResult((short) result);
 		resultitem.setCmdResult(resultDesc);
