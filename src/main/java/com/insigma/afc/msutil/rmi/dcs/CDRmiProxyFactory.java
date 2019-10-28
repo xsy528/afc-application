@@ -5,14 +5,21 @@
  */
 package com.insigma.afc.msutil.rmi.dcs;
 
+import com.insigma.afc.ftp.properties.RmiProperties;
+import com.insigma.afc.msutil.dao.util.JdbcTemplateDao;
 import com.insigma.afc.msutil.enums.AFCCmdResultType;
+import com.insigma.afc.msutil.enums.AFCDeviceType;
+import com.insigma.afc.topology.MetroDevice;
+import com.insigma.afc.topology.MetroLine;
 import com.insigma.afc.topology.MetroNode;
+import com.insigma.afc.topology.MetroStation;
 import com.insigma.afc.workbench.rmi.CmdHandlerResult;
 import com.insigma.afc.msutil.model.CommandResult;
 import com.insigma.afc.msutil.rmi.IMessageCheckService;
 import com.insigma.afc.msutil.rmi.MessageCheckService;
 import com.insigma.afc.workbench.rmi.ICommandService;
 import com.insigma.commons.util.DateTimeUtil;
+import com.insigma.commons.util.NodeIdUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,6 +29,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static com.insigma.afc.msutil.enums.AFCDeviceType.LC;
+import static com.insigma.afc.msutil.enums.AFCDeviceType.SC;
 import static com.insigma.afc.msutil.rmi.dcs.NodeStrategyUtil.getNodeId;
 
 
@@ -146,7 +155,6 @@ public class CDRmiProxyFactory<T> {
 
 	/**
 	 * 调用CommonService接口获取CommonResult集合
-	 * @param commandService
 	 * @param userId
 	 * @param node
 	 * @param arg
@@ -157,50 +165,73 @@ public class CDRmiProxyFactory<T> {
 	 * @return
 	 */
 	//@Transactional
-	public static List<CommandResult> getCommandResult(ICommandService commandService, final String userId,
+	public static List<CommandResult> getCommandResult(JdbcTemplate jdbcTemplate, final String userId,
                                                        final MetroNode node, final Object arg, final int id, final short cmdType, final String name, boolean isSaveCmd){
 
 		List<CommandResult> results = new Vector<>();
+		RmiProperties properties = new RmiProperties();
 
 		int result = AFCCmdResultType.SEND_FAILED;
 		String resultDesc = null;
 		try {
 			//根据车站号获取对应的commandService
-//			if (getNodeLevel(node.id()).equals(AFCNodeLevel.ACC)) {
-//				CDRmiProxyFactory<ICommandService> rmiProxyFactory = new CDRmiProxyFactory<>(rmiPort, "CommandService", ICommandService.class,commonDao);
-//				MetroStation station = (MetroStation)node;
-//				commandService = rmiProxyFactory.getProxyBeanByNodeId(station.getStationId());
-//			}
+		//	if (getNodeLevel(node.id()).equals(AFCNodeLevel.ACC)) {
+				CDRmiProxyFactory<ICommandService> rmiProxyFactory = new CDRmiProxyFactory<>(properties.getCommandServiceRmiPort()+"", "CommandService", ICommandService.class,jdbcTemplate);
+				List<Long> nodes = new ArrayList<>();
+				ICommandService commandService = null;
+				if(node instanceof MetroStation){
+					MetroStation station = (MetroStation) node;
+					nodes.add(NodeStrategyUtil.getNodeId(station.getLineId()));
+					nodes.add(NodeStrategyUtil.getNodeId(station.getStationId()));
+					//nodes.add(station.getNodeId());
+					rmiProxyFactory.InitIpToProxyService(nodes);
+					commandService = rmiProxyFactory.getProxyBeanByNodeId(NodeStrategyUtil.getNodeId(node.getStationId()));
+				}else if(node instanceof MetroDevice){
+					MetroDevice device = (MetroDevice)node;
+					nodes.add(NodeStrategyUtil.getNodeId(device.getLineId()));
+					nodes.add(NodeStrategyUtil.getNodeId(device.getStationId()));
+					nodes.add(device.getNodeId());
+					rmiProxyFactory.InitIpToProxyService(nodes);
+					commandService = rmiProxyFactory.getProxyBeanByNodeId(node.getNodeId());
+				}else if(node instanceof MetroLine){
+					MetroLine line = (MetroLine)node; 
+					nodes.add(NodeStrategyUtil.getNodeId(line.getLineId()));
+					nodes.add(NodeStrategyUtil.getNodeId(0));
+					//nodes.add(line.getNodeId());
+					rmiProxyFactory.InitIpToProxyService(nodes);
+					commandService = rmiProxyFactory.getProxyBeanByNodeId(NodeStrategyUtil.getNodeId(node.getLineId()));
+				}
+		//	}
 			try{
 				commandService.alive();
 			}catch (Exception e){
 				logger.debug("访问远程RMI接口失败！");
 				return  null;
 			}
-
+//			MetroStation target = new MetroStation();
+//			switch (node.getNodeType()) {
+//				case LC: {
+//					MetroLine metroLine = (MetroLine) node;
+//					target.setLineID(metroLine.getLineID());
+//					target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroLine.getLineID().longValue()));
+//					break;
+//				}
+//				case SC: {
+//					MetroStation metroStation = (MetroStation) node;
+//					target.setLineID(metroStation.getLineId());
+//					target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroStation.getLineId().longValue()));
+//					break;
+//				}
+//				case SLE: {
+//					MetroDevice metroDevice = (MetroDevice) node;
+//					target.setLineID(metroDevice.getLineId());
+//					target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroDevice.getLineId().longValue()));
+//					break;
+//				}
+//				default:
+//			}
 				//将目标节点转化为发送命令节点
 //				com.insigma.afc.topology.MetroLine target = new com.insigma.afc.topology.MetroLine();
-//				switch (node.level()) {
-//					case LC: {
-//						MetroLine metroLine = (MetroLine) node;
-//						target.setLineID(metroLine.getLineID());
-//						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroLine.getLineID().longValue()));
-//						break;
-//					}
-//					case SC: {
-//						MetroStation metroStation = (MetroStation) node;
-//						target.setLineID(metroStation.getLineId());
-//						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroStation.getLineId().longValue()));
-//						break;
-//					}
-//					case SLE: {
-//						MetroDevice metroDevice = (MetroDevice) node;
-//						target.setLineID(metroDevice.getLineId());
-//						target.setNodeId(NodeIdUtils.nodeIdStrategy.getNodeNo(metroDevice.getLineId().longValue()));
-//						break;
-//					}
-//					default:
-//				}
 			CmdHandlerResult command = commandService.command(id, userId,
 					node.getNodeId(), arg, node);
 			Serializable returnValue = command.returnValue;
@@ -211,16 +242,17 @@ public class CDRmiProxyFactory<T> {
 			}
 			resultDesc = command.getResultMessage();
 		} catch (Exception e) {
+			e.printStackTrace();
 			logger.error("发送" + name + "错误", e);
 		}
 //		logger.info("向节点" + node.name() + "发送" + name + "  返回：" + result);
-		results.add(save(node, name, arg, result, cmdType, resultDesc,userId,isSaveCmd));
+		results.add(save(node, name, arg, result, cmdType, resultDesc,userId,isSaveCmd,jdbcTemplate));
 
 		return results;
 	}
 
 	public static CommandResult save(final MetroNode node, String command, final Object arg, final int result,
-							  final short cmdType, final String resultDesc,String userId,boolean isSaveCmd) {
+							  final short cmdType, final String resultDesc,String userId,boolean isSaveCmd,JdbcTemplate jdbcTemplate) {
 
 //		String resultMessageShow = "发送结果：\n\n";
 
@@ -241,6 +273,7 @@ public class CDRmiProxyFactory<T> {
 		}
 
 		if(isSaveCmd) {
+			StringBuilder sql = new StringBuilder("insert into TMO_CMD_RESULT values(");
 //			TmoCmdResult tmoCmdResult = new TmoCmdResult();
 //			tmoCmdResult.setOccurTime(DateTimeUtil.getNow());
 			if (arg != null) {
@@ -249,46 +282,68 @@ public class CDRmiProxyFactory<T> {
 //			if (arg instanceof Form) {
 //				Form form = (Form) arg;
 //				String string = form.getEntity().toString();
-//				command = string;
-//			}
+//				command = string; }
 			}
 
 //			tmoCmdResult.setCmdName(command);
-
-//			if (node instanceof MetroLine) {
-//				MetroLine line = (MetroLine) node;
-//				short lineID = line.getLineID();
+				Short lineID = null;
+				Integer stationId = null;
+				Long nodeId = null;
+				Short nodeType = null;
+			if (node instanceof MetroLine) {
+				MetroLine line = (MetroLine) node;
+				lineID = line.getLineID();
+				stationId = 0;
+				nodeId = getNodeId(lineID);
+				nodeType = LC;
 //				tmoCmdResult.setLineId(lineID);
 //				tmoCmdResult.setStationId(0);
 //				tmoCmdResult.setNodeId(getNodeId(lineID));
 //				tmoCmdResult.setNodeType(AFCDeviceType.LC);
-//			}
+				}
 //
-//			if (node instanceof MetroStation) {
-//				MetroStation station = (MetroStation) node;
-//				tmoCmdResult.setLineId(station.getLineId());
-//				Integer stationId = station.getStationId();
+			if (node instanceof MetroStation) {
+				MetroStation station = (MetroStation) node;
+				lineID = station.getLineId();
+//				tmoCmdResult.setLineId();
+				stationId = station.getStationId();
+				nodeId = getNodeId(stationId);
+				nodeType = SC;
 //				tmoCmdResult.setStationId(stationId);
 //				tmoCmdResult.setNodeId(getNodeId(stationId));
 //				tmoCmdResult.setNodeType(AFCDeviceType.SC);
-//			}
+			}
 //
-//			if (node instanceof MetroDevice) {
-//				MetroDevice device = (MetroDevice) node;
+			if (node instanceof MetroDevice) {
+				MetroDevice device = (MetroDevice) node;
+				lineID = device.getLineId();
+				stationId = device.getStationId();
+				nodeId = device.getNodeId();
+				nodeType = device.getDeviceType();
+
 //				tmoCmdResult.setLineId(device.getLineId());
 //				tmoCmdResult.setStationId(device.getStationId());
 //				tmoCmdResult.setNodeId(device.getDeviceId());
 //				tmoCmdResult.setNodeType(device.getDeviceType());
-//			}
+			}
+			String logIdSql = "select S_TMO_CMD_RESULT.nextval from dual";
+			long logId = jdbcTemplate.queryForObject(logIdSql,long.class);
 
+			sql.append(logId+","+lineID+","+stationId+","+nodeId+","+nodeType+",'"+userId+"',"+cmdType+",'"+command+
+					"','','',"+(short) result+",TO_DATE('"+DateTimeUtil.formatCurrentDateToString("yyyy-MM-dd HH:mm:ss")+
+					"', 'YYYY-MM-DD HH24:MI:SS'),'"+resultDesc+"',"+(short) 0);
+			//"+DateTimeUtil.getNow()+"
+			sql.append(")");
 //			tmoCmdResult.setUploadStatus((short) 0);
 //			tmoCmdResult.setOperatorId(userId);
 //			tmoCmdResult.setCmdResult((short) result);
 //			tmoCmdResult.setRemark(resultDesc);
 //			tmoCmdResult.setCmdType(cmdType);
 			try {
-				//tmoCmdResult
 				//commonDao.execSqlUpdate(,null);
+				JdbcTemplateDao jdbcTemplateDao = new JdbcTemplateDao(jdbcTemplate);
+				jdbcTemplateDao.execSqlUpdate(sql.toString(),null);
+				logger.info("日志命令保存成功！！");
 			} catch (Exception e) {
 				logger.error("保存命令日志异常", e);
 			}
