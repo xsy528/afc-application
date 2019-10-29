@@ -14,7 +14,6 @@ import java.util.Map;
  * @Time on 2019/9/11 18:01.
  * @Ticket :
  */
-@Service
 public class NodeUtil {
     private JdbcTemplateDao templateDao;
 

@@ -26,7 +26,6 @@ import java.util.Map;
  * @author: xingshaoya
  * @time: 2019-07-09 11:18
  */
-@Service
 public class JdbcTemplateDao {
     private static final Logger LOGGER = LoggerFactory.getLogger(JdbcTemplateDao.class);
 
